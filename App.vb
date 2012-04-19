@@ -179,7 +179,9 @@ DoActionLine:
             End If
 
         Catch
-
+            LogList.Items.Add("FAIL - Unknown: " & e.FullPath)
+            TrayIcon.BalloonTipText = "FAIL - Unknown: " & e.FullPath
+            TrayIcon.ShowBalloonTip(2000)
         End Try
 
 
@@ -212,51 +214,58 @@ DoActionLine:
             Next
 
         Catch
-
+            LogList.Items.Add("FAIL - Directory Helper: " & dirName)
+            TrayIcon.BalloonTipText = "FAIL - Directory Helper: " & dirName
+            TrayIcon.ShowBalloonTip(2000)
         End Try
     End Sub
     Private Sub WatcherRenameEvent(ByVal sender As System.Object, ByVal e As System.IO.RenamedEventArgs) Handles Watcher.Renamed
-
-        If e.FullPath.Contains(".svn") Or e.FullPath.Contains(".git") Then
-            Skip(e.FullPath)
-            Return
-        End If
-
-        Dim target As String = e.FullPath.Replace(My.Settings.Path, My.Settings.Destination)
-        Dim oldtarget As String = e.OldFullPath.Replace(My.Settings.Path, My.Settings.Destination)
-
-        Dim dir As Boolean = Directory.Exists(e.FullPath)
-
-        If dir Then
-            Dim dirinfo As DirectoryInfo = New DirectoryInfo(e.FullPath)
-            If dirinfo.Attributes.HasFlag(FileAttributes.Hidden) Then
+        Try
+            If e.FullPath.Contains(".svn") Or e.FullPath.Contains(".git") Then
                 Skip(e.FullPath)
                 Return
             End If
-            Try
-                Directory.Move(oldtarget, target)
-                LogList.Items.Add("Rename dir: " & e.FullPath)
-            Catch
-                LogList.Items.Add("FAIL - Rename dir: " & e.FullPath)
-                TrayIcon.BalloonTipText = "FAIL - Rename dir: " & e.FullPath
-                TrayIcon.ShowBalloonTip(2000)
-            End Try
 
-        Else
-            If File.GetAttributes(e.FullPath).HasFlag(FileAttributes.Hidden) Then
-                Skip(e.FullPath)
-                Return
+            Dim target As String = e.FullPath.Replace(My.Settings.Path, My.Settings.Destination)
+            Dim oldtarget As String = e.OldFullPath.Replace(My.Settings.Path, My.Settings.Destination)
+
+            Dim dir As Boolean = Directory.Exists(e.FullPath)
+
+            If dir Then
+                Dim dirinfo As DirectoryInfo = New DirectoryInfo(e.FullPath)
+                If dirinfo.Attributes.HasFlag(FileAttributes.Hidden) Then
+                    Skip(e.FullPath)
+                    Return
+                End If
+                Try
+                    Directory.Move(oldtarget, target)
+                    LogList.Items.Add("Rename dir: " & e.FullPath)
+                Catch
+                    LogList.Items.Add("FAIL - Rename dir: " & e.FullPath)
+                    TrayIcon.BalloonTipText = "FAIL - Rename dir: " & e.FullPath
+                    TrayIcon.ShowBalloonTip(2000)
+                End Try
+
+            Else
+                If File.GetAttributes(e.FullPath).HasFlag(FileAttributes.Hidden) Then
+                    Skip(e.FullPath)
+                    Return
+                End If
+                Try
+                    File.Move(oldtarget, target)
+                    LogList.Items.Add("Rename: " & e.FullPath)
+                Catch
+                    LogList.Items.Add("FAIL - Rename: " & e.FullPath)
+                    TrayIcon.BalloonTipText = "FAIL - Rename: " & e.FullPath
+                    TrayIcon.ShowBalloonTip(2000)
+                End Try
+
             End If
-            Try
-                File.Move(oldtarget, target)
-                LogList.Items.Add("Rename: " & e.FullPath)
-            Catch
-                LogList.Items.Add("FAIL - Rename: " & e.FullPath)
-                TrayIcon.BalloonTipText = "FAIL - Rename: " & e.FullPath
-                TrayIcon.ShowBalloonTip(2000)
-            End Try
-
-        End If
+        Catch
+            LogList.Items.Add("FAIL - Rename: " & e.FullPath)
+            TrayIcon.BalloonTipText = "FAIL - Rename: " & e.FullPath
+            TrayIcon.ShowBalloonTip(2000)
+        End Try
 
     End Sub
 
