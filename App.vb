@@ -33,149 +33,154 @@ Public Class FileWatcher
 
     Public Sub WatcherEvent(ByVal sender As System.Object, ByVal e As System.IO.FileSystemEventArgs) Handles Watcher.Changed, Watcher.Deleted, Watcher.Created
 
-        If e.FullPath.Contains(".svn") Or e.FullPath.Contains(".git") Then
-            Skip(e.FullPath)
-            Return
-        End If
 
-
-        If modTimes.Count < 1 Then
-            modTimes.Add(" ", " ")
-        End If
-
-        Dim target As String = e.FullPath.Replace(My.Settings.Path, My.Settings.Destination)
-
-        Dim dir As Boolean = False
-        If e.ChangeType = WatcherChangeTypes.Deleted Then
-            Try
-                dir = Directory.Exists(target)
-            Catch
-
-            End Try
-        Else
-            dir = Directory.Exists(e.FullPath)
-        End If
-
-
-
-        If dir Then
-            If e.ChangeType = WatcherChangeTypes.Changed Then
+        Try
+            If e.FullPath.Contains(".svn") Or e.FullPath.Contains(".git") Then
                 Skip(e.FullPath)
                 Return
             End If
 
-            Dim dirinfo As DirectoryInfo
-            'create or delete
+
+            If modTimes.Count < 1 Then
+                modTimes.Add(" ", " ")
+            End If
+
+            Dim target As String = e.FullPath.Replace(My.Settings.Path, My.Settings.Destination)
+
+            Dim dir As Boolean = False
             If e.ChangeType = WatcherChangeTypes.Deleted Then
                 Try
-                    dirinfo = New DirectoryInfo(target)
+                    dir = Directory.Exists(target)
                 Catch
 
                 End Try
             Else
-                    dirinfo = New DirectoryInfo(e.FullPath)
+                dir = Directory.Exists(e.FullPath)
             End If
 
-            If dirinfo.Attributes.HasFlag(FileAttributes.Hidden) Then
-                Skip(e.FullPath)
-                Return
-            ElseIf e.ChangeType = WatcherChangeTypes.Created Then
-                'Create
-                Try
-                    Directory.CreateDirectory(target)
-                    LogList.Items.Add("Create dir: " & e.FullPath)
-                Catch
-                    LogList.Items.Add("FAIL - Create dir: " & e.FullPath)
-                    TrayIcon.BalloonTipText = "FAIL - Create dir: " & e.FullPath
-                    TrayIcon.ShowBalloonTip(2000)
-                End Try
-
-                'Are we coming out of a move?
-                If (Not (File.GetAttributes(e.FullPath) And FileAttributes.Directory) = 0) Then
-                    DiretoryHelper(e.FullPath)
-                End If
 
 
-            ElseIf e.ChangeType = WatcherChangeTypes.Deleted Then
-
-                'Delete
-                Try
-                    Directory.Delete(target, True)
-                    LogList.Items.Add("Del dir: " & e.FullPath)
-                Catch
-                    LogList.Items.Add("FAIL - Del dir: " & e.FullPath)
-                    TrayIcon.BalloonTipText = "FAIL - Del dir: " & e.FullPath
-                    TrayIcon.ShowBalloonTip(2000)
-                End Try
-            End If
-
-        ElseIf e.ChangeType = WatcherChangeTypes.Deleted Then
-            Try
-                If File.GetAttributes(target).HasFlag(FileAttributes.Hidden) Then
+            If dir Then
+                If e.ChangeType = WatcherChangeTypes.Changed Then
                     Skip(e.FullPath)
                     Return
                 End If
-            Catch
 
-            End Try
-            'Delete
-            Try
-                File.Delete(target)
-                LogList.Items.Add("Del: " & e.FullPath)
-            Catch
-                LogList.Items.Add("FAIL - Del: " & e.FullPath)
-                TrayIcon.BalloonTipText = "FAIL - Del: " & e.FullPath
-                TrayIcon.ShowBalloonTip(2000)
-            End Try
-        ElseIf File.GetAttributes(e.FullPath).HasFlag(FileAttributes.Hidden) Then
-            Skip(e.FullPath)
-            Return
+                Dim dirinfo As DirectoryInfo
+                'create or delete
+                If e.ChangeType = WatcherChangeTypes.Deleted Then
+                    Try
+                        dirinfo = New DirectoryInfo(target)
+                    Catch
 
-        ElseIf modTimes.ContainsKey(e.FullPath.ToString) Then
-            Dim lastWrite = File.GetLastWriteTime(e.FullPath)
-            If modTimes(e.FullPath) <> lastWrite.ToString Then
-                GoTo DoActionLine
-            Else
+                    End Try
+                Else
+                    dirinfo = New DirectoryInfo(e.FullPath)
+                End If
+
+                If dirinfo.Attributes.HasFlag(FileAttributes.Hidden) Then
+                    Skip(e.FullPath)
+                    Return
+                ElseIf e.ChangeType = WatcherChangeTypes.Created Then
+                    'Create
+                    Try
+                        Directory.CreateDirectory(target)
+                        LogList.Items.Add("Create dir: " & e.FullPath)
+                    Catch
+                        LogList.Items.Add("FAIL - Create dir: " & e.FullPath)
+                        TrayIcon.BalloonTipText = "FAIL - Create dir: " & e.FullPath
+                        TrayIcon.ShowBalloonTip(2000)
+                    End Try
+
+                    'Are we coming out of a move?
+                    If (Not (File.GetAttributes(e.FullPath) And FileAttributes.Directory) = 0) Then
+                        DiretoryHelper(e.FullPath)
+                    End If
+
+
+                ElseIf e.ChangeType = WatcherChangeTypes.Deleted Then
+
+                    'Delete
+                    Try
+                        Directory.Delete(target, True)
+                        LogList.Items.Add("Del dir: " & e.FullPath)
+                    Catch
+                        LogList.Items.Add("FAIL - Del dir: " & e.FullPath)
+                        TrayIcon.BalloonTipText = "FAIL - Del dir: " & e.FullPath
+                        TrayIcon.ShowBalloonTip(2000)
+                    End Try
+                End If
+
+            ElseIf e.ChangeType = WatcherChangeTypes.Deleted Then
+                Try
+                    If File.GetAttributes(target).HasFlag(FileAttributes.Hidden) Then
+                        Skip(e.FullPath)
+                        Return
+                    End If
+                Catch
+
+                End Try
+                'Delete
+                Try
+                    File.Delete(target)
+                    LogList.Items.Add("Del: " & e.FullPath)
+                Catch
+                    LogList.Items.Add("FAIL - Del: " & e.FullPath)
+                    TrayIcon.BalloonTipText = "FAIL - Del: " & e.FullPath
+                    TrayIcon.ShowBalloonTip(2000)
+                End Try
+            ElseIf File.GetAttributes(e.FullPath).HasFlag(FileAttributes.Hidden) Then
                 Skip(e.FullPath)
                 Return
-            End If
-        Else
+
+            ElseIf modTimes.ContainsKey(e.FullPath.ToString) Then
+                Dim lastWrite = File.GetLastWriteTime(e.FullPath)
+                If modTimes(e.FullPath) <> lastWrite.ToString Then
+                    GoTo DoActionLine
+                Else
+                    Skip(e.FullPath)
+                    Return
+                End If
+            Else
 DoActionLine:
-            'do action
-            Dim lastWrite = File.GetLastWriteTime(e.FullPath)
-            If modTimes.ContainsKey(e.FullPath) Then
-                modTimes(e.FullPath.ToString) = lastWrite.ToString
-            Else
-                modTimes.Add(e.FullPath, lastWrite)
+                'do action
+                Dim lastWrite = File.GetLastWriteTime(e.FullPath)
+                If modTimes.ContainsKey(e.FullPath) Then
+                    modTimes(e.FullPath.ToString) = lastWrite.ToString
+                Else
+                    modTimes.Add(e.FullPath, lastWrite)
+                End If
+
+                If e.ChangeType = WatcherChangeTypes.Changed Then
+                    Try
+                        File.Copy(e.FullPath, target, True)
+                        LogList.Items.Add("Change: " & e.FullPath)
+                    Catch
+                        LogList.Items.Add("FAIL - Change: " & e.FullPath)
+                        TrayIcon.BalloonTipText = "FAIL - Change: " & e.FullPath
+                        TrayIcon.ShowBalloonTip(2000)
+                    End Try
+                ElseIf e.ChangeType = WatcherChangeTypes.Created Then
+                    'Create
+                    Try
+                        File.Copy(e.FullPath, target, True)
+                        LogList.Items.Add("Create: " & e.FullPath)
+                    Catch
+                        LogList.Items.Add("FAIL - Create: " & e.FullPath)
+                        TrayIcon.BalloonTipText = "FAIL - Create: " & e.FullPath
+                        TrayIcon.ShowBalloonTip(2000)
+
+                    End Try
+                Else
+                    LogList.Items.Add("Unknown: " & e.FullPath)
+
+                End If
+
             End If
 
-            If e.ChangeType = WatcherChangeTypes.Changed Then
-                Try
-                    File.Copy(e.FullPath, target, True)
-                    LogList.Items.Add("Change: " & e.FullPath)
-                Catch
-                    LogList.Items.Add("FAIL - Change: " & e.FullPath)
-                    TrayIcon.BalloonTipText = "FAIL - Change: " & e.FullPath
-                    TrayIcon.ShowBalloonTip(2000)
-                End Try
-            ElseIf e.ChangeType = WatcherChangeTypes.Created Then
-                'Create
-                Try
-                    File.Copy(e.FullPath, target, True)
-                    LogList.Items.Add("Create: " & e.FullPath)
-                Catch
-                    LogList.Items.Add("FAIL - Create: " & e.FullPath)
-                    TrayIcon.BalloonTipText = "FAIL - Create: " & e.FullPath
-                    TrayIcon.ShowBalloonTip(2000)
+        Catch
 
-                End Try
-            Else
-                LogList.Items.Add("Unknown: " & e.FullPath)
-
-            End If
-
-        End If
-
+        End Try
 
 
     End Sub
